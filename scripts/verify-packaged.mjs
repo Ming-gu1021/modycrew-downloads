@@ -28,7 +28,7 @@ try{
     dialog.showOpenDialog=async()=>({canceled:false,filePaths:[fixtures.original]});dialog.showSaveDialog=async()=>({canceled:false,filePath:fixtures.saved});
   },{original,saved});
   await page.goto('modycrew://app/documents/?preview=workbench');
-  const workspaceResult=await page.evaluate(async()=>{try{return await window.modycrewDesktop.loadWorkSessionWorkspace();}catch(error){return {error:error.message,bridges:Object.keys(window).filter(key=>/mody/i.test(key))};}});
+  const workspaceResult=await page.evaluate(async()=>{try{return await window.modyCrewDesktopBridge.loadWorkSessionWorkspace();}catch(error){return {error:error.message,bridges:Object.keys(window).filter(key=>/mody/i.test(key))};}});
   assert.equal(workspaceResult.status,'work_session_workspace_loaded','Actual packaged workspace initialization failed: '+JSON.stringify(workspaceResult));
   const install=page.getByRole('button',{name:'모디 자료실에서 설치 · 6.3MB',exact:true});await install.waitFor({state:'visible',timeout:30000});await install.click();
   const open=page.getByRole('button',{name:'PDF 열기',exact:true});await open.waitFor({state:'visible',timeout:150000});
