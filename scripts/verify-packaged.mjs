@@ -12,14 +12,15 @@ const original=path.join(output,'original.pdf'),saved=path.join(output,'review-c
 const bytes=await new Promise((resolve,reject)=>{const doc=new PDFDocument(),chunks=[];doc.on('data',chunk=>chunks.push(chunk));doc.on('end',()=>resolve(Buffer.concat(chunks)));doc.on('error',reject);doc.fontSize(24).text('ModyCrew native release acceptance');doc.fontSize(14).text('Searchable evidence in the packaged application.');doc.addPage().text('Offline second page.');doc.end();});
 await writeFile(original,bytes);const originalHash=createHash('sha256').update(bytes).digest('hex');
 const build=path.resolve('build/output');
-const executable=process.platform==='darwin'?path.join(build,process.arch==='arm64'?'mac-arm64':'mac','ModyCrew.app/Contents/MacOS/ModyCrew'):path.join(build,'linux-unpacked/ModyCrew');
+const executable=process.env.MODYCREW_TEST_EXECUTABLE||(process.platform==='darwin'?path.join(build,process.arch==='arm64'?'mac-arm64':'mac','ModyCrew.app/Contents/MacOS/ModyCrew'):path.join(build,'linux-unpacked/ModyCrew'));
 const environment={...process.env};for(const key of ['MODYCREW_SOURCE_URL','GH_TOKEN','GITHUB_TOKEN'])delete environment[key];
 const app=await _electron.launch({executablePath:executable,args:[...(process.platform==='linux'?['--no-sandbox']:[]),'--user-data-dir='+profile],env:environment,timeout:60000});
+const pageErrors=[];let inspectedPage;
 async function savedPdf(){const deadline=Date.now()+30000;while(Date.now()<deadline){try{const value=await readFile(saved);if(value.subarray(0,5).toString()==='%PDF-')return;}catch{}await new Promise(resolve=>setTimeout(resolve,100));}throw new Error('The PDF copy was not saved');}
 try{
   assert.equal(await realpath(await app.evaluate(({app})=>app.getPath('userData'))),await realpath(profile));
   assert.equal(await app.evaluate(({app})=>app.getVersion()),process.env.MODYCREW_RELEASE_VERSION);
-  const page=await app.firstWindow();await page.locator('input[type=password]').waitFor({state:'visible',timeout:30000});assert.match(page.url(),/^modycrew:\/\/app\/account/);
+  const page=await app.firstWindow();inspectedPage=page;page.on('pageerror',error=>pageErrors.push(error.message));await page.locator('input[type=password]').waitFor({state:'visible',timeout:30000});assert.match(page.url(),/^modycrew:\/\/app\/account/);
   await page.screenshot({path:path.join(output,'account.png')});
   await app.evaluate(({dialog},fixtures)=>{
     globalThis.__nativeReleaseRequests=[];globalThis.__nativeReleaseOffline=false;const originalFetch=globalThis.fetch;
@@ -40,4 +41,7 @@ try{
   assert.equal(createHash('sha256').update(await readFile(original)).digest('hex'),originalHash);
   const proof={schema:'modycrew.packaged-release-proof.v1',version:process.env.MODYCREW_RELEASE_VERSION,platform:process.platform,arch:process.arch,actualPackagedApplication:true,accountScreen:true,actualInstallButton:true,pdfPages:2,textSearch:true,savedCopy:true,controlledOfflineReopen:true,removedThroughUi:true,originalPreserved:true,accountMode:'existing local workbench preview; customer login not exercised',nativeDialogs:'fixture selections; no OS dialog interaction',customerAccountVerified:false,sourceSha256:process.env.MODYCREW_SOURCE_SHA256,windowsSha256:process.env.MODYCREW_WINDOWS_SHA256};
   await writeFile(path.join(output,'verified-package.json'),JSON.stringify(proof,null,2));console.log('Packaged application, installation and PDF user paths passed');
+}catch(error){
+  if(inspectedPage&&!inspectedPage.isClosed()){await inspectedPage.screenshot({path:path.join(output,'failed-state.png')}).catch(()=>{});const state={url:inspectedPage.url(),body:(await inspectedPage.locator('body').innerText().catch(()=>'' )).slice(0,7000),pageErrors,message:error.message};await writeFile(path.join(output,'failed-state.json'),JSON.stringify(state,null,2));console.error(JSON.stringify(state));}
+  throw error;
 }finally{await app.close();}
