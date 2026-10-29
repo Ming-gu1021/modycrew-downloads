@@ -1,0 +1,108 @@
+name: Build and publish native previews
+run-name: ModyCrew ${{ inputs.release_key }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+      source_url:
+        required: true
+        type: string
+      source_sha256:
+        required: true
+        type: string
+      windows_sha256:
+        required: true
+        type: string
+      release_key:
+        required: true
+        type: string
+concurrency:
+  group: native-release-${{ inputs.version }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux
+            arch: x64
+          - runner: macos-15
+            platform: darwin
+            arch: arm64
+          - runner: macos-15-intel
+            platform: darwin
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    env:
+      MODYCREW_RELEASE_VERSION: ${{ inputs.version }}
+      MODYCREW_SOURCE_URL: ${{ inputs.source_url }}
+      MODYCREW_SOURCE_SHA256: ${{ inputs.source_sha256 }}
+      MODYCREW_WINDOWS_SHA256: ${{ inputs.windows_sha256 }}
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - name: Fetch and validate release source
+        run: node scripts/fetch-source.mjs
+      - name: Build platform installer
+        run: npm run installer -- --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+      - name: Verify the packaged application on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run verify:package
+      - name: Verify the packaged application on macOS
+        if: runner.os == 'macOS'
+        run: npm run verify:package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            build/output/ModyCrew-*
+            build/output/LATEST-*.json
+            proof/verified-package.json
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-${{ matrix.platform }}-${{ matrix.arch }}
+          path: proof/
+          if-no-files-found: ignore
+          retention-days: 14
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODYCREW_RELEASE_VERSION: ${{ inputs.version }}
+      MODYCREW_SOURCE_SHA256: ${{ inputs.source_sha256 }}
+      MODYCREW_WINDOWS_SHA256: ${{ inputs.windows_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: artifacts
+      - name: Publish only the complete verified release
+        run: npm run publish:preview
