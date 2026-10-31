@@ -30,19 +30,25 @@ try{
   await page.goto('modycrew://app/documents/?preview=workbench');
   const workspaceResult=await page.evaluate(async()=>{try{return await window.modyCrewDesktopBridge.loadWorkSessionWorkspace();}catch(error){return {error:error.message,bridges:Object.keys(window).filter(key=>/mody/i.test(key))};}});
   assert.equal(workspaceResult.status,'work_session_workspace_loaded','Actual packaged workspace initialization failed: '+JSON.stringify(workspaceResult));
-  const install=page.getByRole('button',{name:'모디 자료실에서 설치 · 6.3MB',exact:true});await install.waitFor({state:'visible',timeout:30000});await install.click();
+  // Releases from 0.2.116 ship the PDF viewer inside the app ("기본 제공 · 추가 다운로드 없음").
+  // Older releases showed an install button that downloaded the viewer from the Mody site.
+  const install=page.getByRole('button',{name:'모디 자료실에서 설치 · 6.3MB',exact:true});
+  const builtInViewer=await page.getByText('기본 제공 · 추가 다운로드 없음',{exact:true}).isVisible().catch(()=>false);
+  if(!builtInViewer){await install.waitFor({state:'visible',timeout:30000});await install.click();}
   const open=page.getByRole('button',{name:'PDF 열기',exact:true});await open.waitFor({state:'visible',timeout:150000});
-  assert.deepEqual(await app.evaluate(()=>globalThis.__nativeReleaseRequests),['https://mody.ai.kr/resources/modycrew/modules/catalog.json','https://mody.ai.kr/resources/modycrew/modules/pdfjs-6.4.299-dist.zip']);
+  await page.waitForFunction(()=>{const button=[...document.querySelectorAll('button')].find(node=>node.textContent?.trim()==='PDF 열기');return Boolean(button)&&!button.disabled;},null,{timeout:150000});
+  assert.deepEqual(await app.evaluate(()=>globalThis.__nativeReleaseRequests),builtInViewer?[]:['https://mody.ai.kr/resources/modycrew/modules/catalog.json','https://mody.ai.kr/resources/modycrew/modules/pdfjs-6.4.299-dist.zip'],builtInViewer?'A built-in viewer must not download anything from the Mody site':'The downloadable viewer must come from the Mody site');
   await page.screenshot({path:path.join(output,'installed.png')});
   let windowEvent=app.waitForEvent('window');await open.click();let viewer=await windowEvent;
   await viewer.waitForFunction(()=>globalThis.PDFViewerApplication?.pdfDocument?.numPages===2,null,{timeout:60000});await viewer.locator('#viewer .page canvas').first().waitFor({state:'visible'});
   await viewer.locator('#viewFindButton').click();await viewer.locator('#findInput').fill('Searchable evidence');await viewer.locator('#findInput').press('Enter');await viewer.waitForFunction(()=>PDFViewerApplication.findController.pageMatches.some(matches=>matches?.length>0));
   await viewer.screenshot({path:path.join(output,'first-pdf.png')});await viewer.locator('#downloadButton').click();await savedPdf();await viewer.close();
   await app.evaluate(()=>{globalThis.__nativeReleaseOffline=true;});windowEvent=app.waitForEvent('window');await open.click();viewer=await windowEvent;await viewer.waitForFunction(()=>globalThis.PDFViewerApplication?.pdfDocument?.numPages===2,null,{timeout:60000});await viewer.close();
-  await page.getByRole('button',{name:'뷰어 제거',exact:true}).click();await page.getByRole('button',{name:'제거 확인',exact:true}).click();await install.waitFor({state:'visible',timeout:30000});
+  let removedThroughUi=false;
+  if(!builtInViewer){await page.getByRole('button',{name:'뷰어 제거',exact:true}).click();await page.getByRole('button',{name:'제거 확인',exact:true}).click();await install.waitFor({state:'visible',timeout:30000});removedThroughUi=true;}
   assert.equal(createHash('sha256').update(await readFile(original)).digest('hex'),originalHash);
-  const proof={schema:'modycrew.packaged-release-proof.v1',version:process.env.MODYCREW_RELEASE_VERSION,platform:process.platform,arch:process.arch,actualPackagedApplication:true,accountScreen:true,actualInstallButton:true,pdfPages:2,textSearch:true,savedCopy:true,controlledOfflineReopen:true,removedThroughUi:true,originalPreserved:true,accountMode:'existing local workbench preview; customer login not exercised',nativeDialogs:'fixture selections; no OS dialog interaction',customerAccountVerified:false,sourceSha256:process.env.MODYCREW_SOURCE_SHA256,windowsSha256:process.env.MODYCREW_WINDOWS_SHA256};
-  await writeFile(path.join(output,'verified-package.json'),JSON.stringify(proof,null,2));console.log('Packaged application, installation and PDF user paths passed');
+  const proof={schema:'modycrew.packaged-release-proof.v1',version:process.env.MODYCREW_RELEASE_VERSION,platform:process.platform,arch:process.arch,actualPackagedApplication:true,accountScreen:true,builtInViewer,actualInstallButton:!builtInViewer,pdfPages:2,textSearch:true,savedCopy:true,controlledOfflineReopen:true,removedThroughUi,originalPreserved:true,accountMode:'existing local workbench preview; customer login not exercised',nativeDialogs:'fixture selections; no OS dialog interaction',customerAccountVerified:false,sourceSha256:process.env.MODYCREW_SOURCE_SHA256,windowsSha256:process.env.MODYCREW_WINDOWS_SHA256};
+  await writeFile(path.join(output,'verified-package.json'),JSON.stringify(proof,null,2));console.log(builtInViewer?'Packaged application and built-in PDF user paths passed':'Packaged application, installation and PDF user paths passed');
 }catch(error){
   if(inspectedPage&&!inspectedPage.isClosed()){await inspectedPage.screenshot({path:path.join(output,'failed-state.png')}).catch(()=>{});const state={url:inspectedPage.url(),body:(await inspectedPage.locator('body').innerText().catch(()=>'' )).slice(0,7000),pageErrors,message:error.message};await writeFile(path.join(output,'failed-state.json'),JSON.stringify(state,null,2));console.error(JSON.stringify(state));}
   throw error;
