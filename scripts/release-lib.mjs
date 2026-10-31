@@ -5,6 +5,7 @@ import JSZip from 'jszip';
 
 export const SOURCE_SCHEMA = 'modycrew.release-source.v1';
 export const CHANNEL_SCHEMA = 'modycrew.desktop-downloads.v1';
+export const WINDOWS_PREVIEW_SCHEMA = 'modycrew.windows-preview.v1';
 export const REPOSITORY = 'Ming-gu1021/modycrew-downloads';
 export const sha256 = value => createHash('sha256').update(value).digest('hex');
 export const validVersion = value => /^\d+\.\d+\.\d+$/.test(value || '');
@@ -16,6 +17,22 @@ export function selectChannel(current,candidate) {
   if(current.schema!==CHANNEL_SCHEMA||!validVersion(current.version))throw new Error('Invalid current channel');
   if(compareVersions(current.version,candidate.version)>0)return current;
   if(current.version===candidate.version&&(current.sourceSha256!==candidate.sourceSha256||current.windowsSha256!==candidate.windowsSha256))throw new Error('A published version cannot change source');
+  return candidate;
+}
+// Windows 미리보기 기록(windows-preview.json)의 규격. 메인 저장소의 publish-windows-preview.mjs와 모디 사이트가 같은 규칙으로 읽는다.
+export function validateWindowsPreview(value) {
+  if(value?.schema!==WINDOWS_PREVIEW_SCHEMA||value.channel!=='preview'||value.platform!=='win32'||value.arch!=='x64'||!validVersion(value.version))throw new Error('Invalid Windows preview record');
+  const file='ModyCrew-'+value.version+'-x64.exe',tag='windows-preview-v'+value.version;
+  if(value.file!==file||value.releaseTag!==tag||value.url!==`https://github.com/${REPOSITORY}/releases/download/${tag}/${file}`||value.autoUpdate!==false)throw new Error('Windows preview record does not match the release layout');
+  if(!Number.isSafeInteger(value.bytes)||value.bytes<100*1024*1024||value.bytes>=2*1024*1024*1024||!/^[a-f0-9]{64}$/.test(value.sha256||''))throw new Error('Windows preview size or checksum is invalid');
+  return value;
+}
+export function selectWindowsPreview(current,candidate) {
+  validateWindowsPreview(candidate);
+  if(!current)return candidate;
+  validateWindowsPreview(current);
+  if(compareVersions(current.version,candidate.version)>0)return current;
+  if(current.version===candidate.version&&current.sha256!==candidate.sha256)throw new Error('A published Windows preview cannot change its file');
   return candidate;
 }
 export function safeRelative(value) {

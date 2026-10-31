@@ -4,7 +4,7 @@ import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import JSZip from 'jszip';
-import { sha256, extractSource, SOURCE_SCHEMA, CHANNEL_SCHEMA, selectChannel } from '../scripts/release-lib.mjs';
+import { sha256, extractSource, SOURCE_SCHEMA, CHANNEL_SCHEMA, WINDOWS_PREVIEW_SCHEMA, REPOSITORY, selectChannel, validateWindowsPreview, selectWindowsPreview } from '../scripts/release-lib.mjs';
 
 async function fixture(transform=()=>{}) {
   const values={apiKey:'api-fixture-value',authDomain:'auth-fixture.invalid',projectId:'project-fixture-id',storageBucket:'bucket-fixture.invalid',messagingSenderId:'1234567890',appId:'1:123:app:fixture'};
@@ -21,3 +21,12 @@ test('source checksums, version substitution, private environment keys and path 
   });
 });
 test('an older build finishing late cannot roll the public download channel back',()=>{const base={schema:CHANNEL_SCHEMA,windowsSha256:'b'.repeat(64),sourceSha256:'a'.repeat(64)};const current={...base,version:'1.2.4'},older={...base,version:'1.2.3'};assert.equal(selectChannel(current,older),current);assert.equal(selectChannel(older,current),current);assert.throws(()=>selectChannel(current,{...current,sourceSha256:'c'.repeat(64)}));});
+test('the published Windows preview record matches the release layout and never rolls back',async()=>{
+  const record=(version,extra={})=>({schema:WINDOWS_PREVIEW_SCHEMA,channel:'preview',platform:'win32',arch:'x64',version,file:`ModyCrew-${version}-x64.exe`,bytes:350064605,sha256:'d'.repeat(64),releaseTag:`windows-preview-v${version}`,url:`https://github.com/${REPOSITORY}/releases/download/windows-preview-v${version}/ModyCrew-${version}-x64.exe`,autoUpdate:false,signed:false,...extra});
+  assert.equal(validateWindowsPreview(record('1.2.3')).version,'1.2.3');
+  for(const bad of[{url:'https://example.invalid/ModyCrew-1.2.3-x64.exe'},{file:'ModyCrew-1.2.4-x64.exe'},{autoUpdate:true},{bytes:12},{sha256:'zz'},{schema:CHANNEL_SCHEMA}])assert.throws(()=>validateWindowsPreview(record('1.2.3',bad)));
+  const current=record('1.2.4'),older=record('1.2.3');
+  assert.equal(selectWindowsPreview(current,older),current);assert.equal(selectWindowsPreview(older,current),current);assert.throws(()=>selectWindowsPreview(current,record('1.2.4',{sha256:'e'.repeat(64)})));
+  const published=JSON.parse(await readFile(new URL('../windows-preview.json',import.meta.url),'utf8'));
+  assert.equal(validateWindowsPreview(published).channel,'preview');assert.equal(published.realAccountVerified,false);
+});
