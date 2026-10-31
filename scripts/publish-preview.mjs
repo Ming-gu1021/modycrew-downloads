@@ -14,7 +14,9 @@ for(const target of targets){
   if(record.version!==version||record.sourceSha256!==sourceHash||record.windowsSha256!==windowsHash)throw new Error('Platforms do not come from the same Windows release');
   const proofs=inputs.filter(file=>path.basename(file)==='verified-package.json');let proof;
   for(const file of proofs){const value=JSON.parse(await readFile(file));if(value.platform===target.platform&&value.arch===target.arch)proof=value;}
-  if(!proof||proof.version!==version||proof.sourceSha256!==sourceHash||proof.windowsSha256!==windowsHash||!proof.actualInstallButton||!proof.savedCopy||!proof.controlledOfflineReopen||!proof.removedThroughUi||!proof.originalPreserved)throw new Error('Platform user-path verification is incomplete');
+  // Downloadable viewer releases prove install + removal; built-in viewer releases (0.2.116+) prove the viewer opened without any download.
+  const viewerPathOk=proof?.builtInViewer===true?proof.actualInstallButton===false&&proof.removedThroughUi===false:Boolean(proof?.actualInstallButton&&proof?.removedThroughUi);
+  if(!proof||proof.version!==version||proof.sourceSha256!==sourceHash||proof.windowsSha256!==windowsHash||!viewerPathOk||!proof.pdfPages||!proof.textSearch||!proof.savedCopy||!proof.controlledOfflineReopen||!proof.originalPreserved)throw new Error('Platform user-path verification is incomplete');
   const assets=[];
   for(const ext of target.extensions){const expected=record.files.find(file=>file.file===`ModyCrew-${version}-${target.platform}-${target.arch}.${ext}`);if(!expected)throw new Error('Expected release asset is missing');const source=inputs.find(file=>path.basename(file)===expected.file);if(!source)throw new Error('Expected artifact file is missing');const actual=await fileRecord(source);if(actual.bytes!==expected.sizeBytes||actual.sha256!==expected.sha256)throw new Error('Platform artifact checksum mismatch');assets.push({...actual,format:ext});uploadFiles.push(source);}
   platforms.push({id:target.id,platform:target.platform,arch:target.arch,files:assets});
