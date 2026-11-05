@@ -1,11 +1,11 @@
 {
   "schema": "modycrew.desktop-downloads.v1",
   "channel": "preview",
-  "version": "0.2.155",
-  "sourceSha256": "e11d8bf1ded7c416bb7dae3462ad9aa6854b523915c96a594638d03e515c6eb1",
-  "windowsSha256": "39f0b429cb5bb67e67b645e2e5e52abb584119fee8e1afc196483bc860d1d514",
-  "releaseTag": "preview-v0.2.155",
-  "releaseUrl": "https://github.com/Ming-gu1021/modycrew-downloads/releases/tag/preview-v0.2.155",
+  "version": "0.2.156",
+  "sourceSha256": "511d389909a436990ba01653b8e786653695c6b62286a808a427daac3b543c3e",
+  "windowsSha256": "e72bfe979d026360ed31e68c210a081d34de08f71887fb00984c6f0858376a76",
+  "releaseTag": "preview-v0.2.156",
+  "releaseUrl": "https://github.com/Ming-gu1021/modycrew-downloads/releases/tag/preview-v0.2.156",
   "verifiedOn": "2026-11-05",
   "signed": false,
   "notarized": false,
@@ -17,18 +17,18 @@
       "arch": "arm64",
       "files": [
         {
-          "file": "ModyCrew-0.2.155-darwin-arm64.dmg",
-          "bytes": 258206128,
-          "sha256": "fb05b31404f8680f8871d5a4fac7d1543228ecc15eaed19e1f38741402f68fba",
+          "file": "ModyCrew-0.2.156-darwin-arm64.dmg",
+          "bytes": 258189398,
+          "sha256": "64e5daf6517cd7afa84e9dfa00389eceaf2381b85f067c95f818e60eaab857d5",
           "format": "dmg",
-          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.155/ModyCrew-0.2.155-darwin-arm64.dmg"
+          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.156/ModyCrew-0.2.156-darwin-arm64.dmg"
         },
         {
-          "file": "ModyCrew-0.2.155-darwin-arm64.zip",
-          "bytes": 250853745,
-          "sha256": "d7e2455a5eff5737663063c0152f5faba463df57afa89f56252ee27eea7af322",
+          "file": "ModyCrew-0.2.156-darwin-arm64.zip",
+          "bytes": 250850299,
+          "sha256": "6aedb1295c7e08f99fcb0d1a9a2b624adb9883fd7dc1a0682613b33e3d011425",
           "format": "zip",
-          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.155/ModyCrew-0.2.155-darwin-arm64.zip"
+          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.156/ModyCrew-0.2.156-darwin-arm64.zip"
         }
       ]
     },
@@ -38,18 +38,18 @@
       "arch": "x64",
       "files": [
         {
-          "file": "ModyCrew-0.2.155-darwin-x64.dmg",
-          "bytes": 262861918,
-          "sha256": "f7825e1dfeace3fb35d8dd550875371b2dcbba40d2c1f9a820b33a863244c578",
+          "file": "ModyCrew-0.2.156-darwin-x64.dmg",
+          "bytes": 262868200,
+          "sha256": "476df933021f173d61d8087e6c67bccf102c1d1ce9a0bee4441d05d6af99b121",
           "format": "dmg",
-          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.155/ModyCrew-0.2.155-darwin-x64.dmg"
+          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.156/ModyCrew-0.2.156-darwin-x64.dmg"
         },
         {
-          "file": "ModyCrew-0.2.155-darwin-x64.zip",
-          "bytes": 255466898,
-          "sha256": "24c886d694c0a79e9af89fbff808655fdbf9be61d2c0c68ce495c8dc5d61ca09",
+          "file": "ModyCrew-0.2.156-darwin-x64.zip",
+          "bytes": 255463801,
+          "sha256": "041ff9cbf985f8fe5d38cb77a1347975d99edee2a9b450d1d7991ca5ebbd97e0",
           "format": "zip",
-          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.155/ModyCrew-0.2.155-darwin-x64.zip"
+          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.156/ModyCrew-0.2.156-darwin-x64.zip"
         }
       ]
     },
@@ -59,18 +59,18 @@
       "arch": "x64",
       "files": [
         {
-          "file": "ModyCrew-0.2.155-linux-x64.deb",
-          "bytes": 208018732,
-          "sha256": "5e4eb6a2f474e70549f5cc8cdb22d0091375ff00dec2a39293317d2f5d933ed5",
+          "file": "ModyCrew-0.2.156-linux-x64.deb",
+          "bytes": 208016804,
+          "sha256": "3b15328c326faaa61a593952eeb61728855effd6ba5b81b394aef978b5cbdb7e",
           "format": "deb",
-          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.155/ModyCrew-0.2.155-linux-x64.deb"
+          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.156/ModyCrew-0.2.156-linux-x64.deb"
         },
         {
-          "file": "ModyCrew-0.2.155-linux-x64.AppImage",
-          "bytes": 267666743,
-          "sha256": "1dcbfbfb15087b4feddef9029ec56aceea6af708373046e6780a3b6b8cb86618",
+          "file": "ModyCrew-0.2.156-linux-x64.AppImage",
+          "bytes": 267666478,
+          "sha256": "dea145d762ff2880fbd620f234d1d401c7ac5dd4e235c3bab696d1ce087eb4b3",
           "format": "AppImage",
-          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.155/ModyCrew-0.2.155-linux-x64.AppImage"
+          "url": "https://github.com/Ming-gu1021/modycrew-downloads/releases/download/preview-v0.2.156/ModyCrew-0.2.156-linux-x64.AppImage"
         }
       ]
     }
